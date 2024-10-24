@@ -1,27 +1,54 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
 from django.db import models
+from django.utils import timezone
 from users.models import Profile
 
 
-# Create your models here.
+class CustomUserManager(UserManager):
+    def _create_user(self, email, password, **extra_fields):
+        if not email:
+            raise ValueError("No has ingresado una dirección de correo electrónico válida")
 
-class User(AbstractUser):
-    nomProyecto = models.TextField('Nombre del proyecto', max_length=40, blank=True, null=True)
-    fechaInicio = models.DateField('Fecha de inicio',blank=True, null=True)
-    fechaFin = models.DateField('Fecha de finaliación',blank=True, null=True)
-    estado = models.BooleanField(default=True, blank=True, null=True)
-    #agregue el perfil, permite nombre first name, etc
-    perfil = models.OneToOneField(Profile,on_delete=models.CASCADE,blank=True,null=True)
-    # -------------información que no quiero de abstract user:------------------------------------------------
-    last_login = None
+        email = self.normalize_email(email)
+        user = self.mode(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
 
+        return user
 
-    def __str__(self):
-        datosFila = "Nombre usuario: " + self.username + " - Proyecto: "
-        return datosFila
+    def create_user(self, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        return self._create_user(email, password, **extra_fields)
 
-    def ObtenerFI(self):
-        return self.fechaInicio.isoformat() if self.fechaInicio else None
+    def create_superuser(self, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self._create_user(email, password, **extra_fields)
 
-    def ObtenerFF(self):
-        return self.fechaFin.isoformat() if self.fechaFin else None
+class User(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(blank=True, default='', unique=True)
+    name = models.CharField(max_length=255, blank=True, default='')
+
+    is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+
+    date_joined = models.DateTimeField(default=timezone.now)
+    last_login = models.DateTimeField(blank=True, null=True)
+
+    objects = CustomUserManager()
+
+    USERNAME_FIELD = 'email'
+    EMAIL_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    class Meta:
+        verbose_name = 'User'
+        verbose_name_plural = 'Users'
+
+    def get_full_name(self):
+        return self.name
+
+    def get_short_name(self):
+        return self.name or self.email.split('@')[0]
