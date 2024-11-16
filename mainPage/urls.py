@@ -14,6 +14,10 @@ urlpatterns = [
     path('agregarMiembro/<int:id_proyecto>/<int:id_miembro>/', views.agregarMiembro, name='agregarMiembro'),
     path('eliminarMiembro/<int:id_proyecto>/<int:id_miembro>/', views.eliminarMiembro, name='eliminarMiembro'),
     path('asignarRoles/<int:id_proyecto>/', views.asignar_roles, name='asignarRoles'),
+    path('checklist/', views.checklist_view, name='checklist_view'), 
+    path('checklist/create/', views.create_checklist, name='create_checklist'),  
+    path('checklist/<int:checklist_id>/add_task/', views.add_task, name='add_task'),
+    path('task/<int:task_id>/add_note/', views.add_note, name='add_note'),
 
     #URLS relacionadas con el calendario:
     path('calendario/', views.calendario, name='calendario'),
