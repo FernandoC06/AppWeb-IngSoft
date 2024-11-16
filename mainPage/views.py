@@ -2,10 +2,11 @@ from django.shortcuts import render,redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 User = get_user_model()
-from .models import Reportes,HistoriaUsuario,Proyecto,Equipo,Miembro
+from .models import Reportes, HistoriaUsuario, Proyecto, Equipo, Miembro, Checklist, Task
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .forms import AsignarRolForm 
+from .forms import AsignarRolForm, TaskForm, ChecklistForm
+from django.forms import modelformset_factory
 
 
 def equipo(request):
@@ -306,3 +307,81 @@ def asignar_roles(request, id_proyecto):
     }
     return render(request, 'mainPage/asignar_roles.html', context)
 
+@login_required
+def create_checklist(request):
+    TaskFormSet = modelformset_factory(Task, form=TaskForm, extra=1, can_delete=True)
+
+    if request.method == 'POST':
+        checklist_form = ChecklistForm(request.POST)
+        task_formset = TaskFormSet(request.POST)
+
+        if checklist_form.is_valid() and task_formset.is_valid():
+            checklist = checklist_form.save(commit=False)
+            checklist.user = request.user
+            checklist.save()
+
+            for form in task_formset:
+                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                    task = form.save(commit=False)
+                    task.checklist = checklist
+                    task.save()
+
+            return redirect('checklist_view')
+
+    else:
+        checklist_form = ChecklistForm()
+        task_formset = TaskFormSet(queryset=Task.objects.none())
+
+    return render(request, 'mainPage/create_checklist.html', {
+        'checklist_form': checklist_form,
+        'task_formset': task_formset,
+    })
+
+
+@login_required
+def checklist_view(request):
+    checklists = Checklist.objects.filter(user=request.user)
+
+    if request.method == 'POST' and 'task_id' in request.POST:
+        task_id = request.POST.get('task_id')
+        task = get_object_or_404(Task, id=task_id)
+
+        # Toggle the 'completed' field value
+        task.completed = not task.completed
+        task.save()
+
+        # After saving, redirect to the same checklist view to reflect the changes
+        return redirect('checklist_view')
+
+    return render(request, 'mainPage/checklist_view.html', {'checklists': checklists})
+
+@login_required
+def add_task(request, checklist_id):
+    checklist = get_object_or_404(Checklist, id=checklist_id, user=request.user)
+
+    if request.method == 'POST':
+        task_form = TaskForm(request.POST)
+        if task_form.is_valid():
+            task = task_form.save(commit=False)
+            task.checklist = checklist
+            task.save()
+            return redirect('checklist_view')
+    else:
+        task_form = TaskForm()
+
+    return render(request, 'mainPage/add_task.html', {
+        'task_form': task_form,
+        'checklist': checklist,
+    })
+
+@login_required
+def add_note(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+
+    if request.method == 'POST':
+        note = request.POST.get('note', '')
+        task.notes = note
+        task.save()
+        return redirect('checklist_view')
+
+    return render(request, 'mainPage/add_note.html', {'task': task})
