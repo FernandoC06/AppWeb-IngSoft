@@ -1,6 +1,5 @@
-
 from django import forms
-from .models import Reportes,Proyecto, Miembro
+from .models import Reportes,Proyecto, Miembro, Task, Checklist
 
 class ProyectForm(forms.ModelForm):
     class Meta:
@@ -24,4 +23,24 @@ class AsignarRolForm(forms.ModelForm):
                 (2, 'Gestor'),
                 (3, 'Programador'),
             ]),
+        }
+
+class ChecklistForm(forms.ModelForm):
+    class Meta:
+        model = Checklist
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del checklist'}),
+        }
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = ['name', 'description', 'start_date', 'end_date', 'completed']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la tarea'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Descripción de la tarea'}),
+            'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'completed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
