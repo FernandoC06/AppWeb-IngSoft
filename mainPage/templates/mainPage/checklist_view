@@ -1,0 +1,70 @@
+{% extends 'mainPage/base.html' %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h1 class="mb-4">Mis Checklists</h1>
+
+    {% if checklists %}
+      {% for checklist in checklists %}
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">{{ checklist.name }}</h4>
+          </div>
+          <div class="card-body">
+            {% if checklist.tasks.all %}
+              <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                  <tr>
+                    <th scope="col">Tarea</th>
+                    <th scope="col">Descripción</th>
+                    <th scope="col">Fecha de Inicio</th>
+                    <th scope="col">Fecha de Fin</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Notas</th>  
+                    <th scope="col">Acciones</th>  
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for task in checklist.tasks.all %}
+                    <tr>
+                      <td>{{ task.name }}</td>
+                      <td>{{ task.description }}</td>
+                      <td>{{ task.start_date }}</td>
+                      <td>{{ task.end_date }}</td>
+                      <td>
+                        <form method="post" action="{% url 'checklist_view' %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="task_id" value="{{ task.id }}">
+                          <div class="form-check">
+                            <input 
+                              type="checkbox" 
+                              class="form-check-input" 
+                              name="completed" 
+                              {% if task.completed %}checked{% endif %} 
+                              onchange="this.form.submit()">
+                            <label class="form-check-label">Completada</label>
+                          </div>
+                        </form>
+                      </td>
+                      <td>{{ task.notes|default:"Sin notas" }}</td>  
+                      <td>
+                        <a href="{% url 'add_note' task.id %}" class="btn btn-sm btn-primary">Añadir nota</a> 
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% else %}
+              <p>No hay tareas en este checklist.</p>
+            {% endif %}
+            <a href="{% url 'add_task' checklist.id %}" class="btn btn-secondary">Añadir Tarea</a>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="alert alert-info">Aún no has creado ningún checklist.</div>
+    {% endif %}
+
+    <a href="{% url 'create_checklist' %}" class="btn btn-primary">Crear nuevo checklist</a>
+  </div>
+{% endblock %}
